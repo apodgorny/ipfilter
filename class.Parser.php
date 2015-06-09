@@ -26,7 +26,7 @@
 
 		private function _getCounterFileName() {
 			if ($this->_sCounterFile === '') {
-				$this->_sCounterFile = md5($_sLogFile) . '.counter';
+				$this->_sCounterFile = md5($this->_sLogFile) . '.counter';
 			}
 			return $this->_sCounterFile;
 		}		 
@@ -187,7 +187,6 @@
 			} else {
 				$this->_error('File ' . $this->_sLogFile . ' does not exist');
 			}
-			print_r($this->_aBlackIps);
 			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps));	
 		}
 	}
