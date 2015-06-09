@@ -1,15 +1,16 @@
 <?php
 
 	class Parser {
-		const COUNTER_FILE = 'counter.txt';
-
 		const PARSE_BLOCK_IP           = '([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})';
 		const PARSE_BLOCK_BRACKET_DATA = '\[([^\]]+)\]';
 		const PARSE_BLOCK_STRING       = '"([^"]*)"';
 		const PARSE_BLOCK_NUMERIC      = '([0-9\-]+)';
+		const PARSE_BLOCK_NONSPACE     = '([^ ]*)';
 		const PARSE_BLOCK_IGNORE       = '([ ]*)';
 
 		private $_sBlackIpsFileName = '';
+		private $_sLogFile          = '';
+		private $_sCounterFile      = '';
 
 		private $_oLogFile      = null;
 		private $_aParseSchema  = [];
@@ -23,9 +24,16 @@
 			die('Error: ' . $s . PHP_EOL);
 		}
 
+		private function _getCounterFileName() {
+			if ($this->_sCounterFile === '') {
+				$this->_sCounterFile = md5($_sLogFile) . '.counter';
+			}
+			return $this->_sCounterFile;
+		}		 
+
 		private function _getPosition() {
-			if (file_exists(self::COUNTER_FILE)) {
-				return intval(file_get_contents(self::COUNTER_FILE));
+			if (file_exists($this->_getCounterFileName())) {
+				return intval(file_get_contents($this->_getCounterFileName()));
 			}
 		}
 
@@ -34,7 +42,7 @@
 			if ($this->_oLogFile) {
 				$nPos = ftell($this->_oLogFile);
 			}
-			file_put_contents(self::COUNTER_FILE, $nPos);
+			file_put_contents($this->_getCounterFileName(), $nPos);
 		}
 
 		private function _ipMakeExist($aLine) {
@@ -91,6 +99,17 @@
 			return false;
 		}
 
+		private function _goToReadPosition() {
+			$nPos = $this->_getPosition();
+			if ($nPos > 0) {
+				$nPos --;
+			}
+			fseek($this->_oLogFile, $nPos);
+			do {
+				$sChar = fread($this->_oLogFile, 1);
+			} while ($sChar !== "\n" || feof($this->_oLogFile));
+		}
+
 		private function _doAdditionalParse($f, &$aLine, $sLineKey) {
 			if ($f) {
 				$a = $f($aLine[$sLineKey]);
@@ -122,7 +141,7 @@
 					$this->_doAdditionalParse($f, $aLine, $sKey);
 					$nPos += $this->_parseIgnore($s, $nPos);
 				} else {
-					$this->_error('Parse failed at "' . $s . '"');
+					$this->_error('Parse failed at "' . $s . '" while parsing "' . $sKey . '" at byte ' . ftell($this->_oLogFile));
 				}
 			}
 			return $aLine;
@@ -142,31 +161,31 @@
 
 		/************************ PUBLIC ************************/
 
-		public function __construct($sBlackIpsFileName) {
+		public function __construct($sLogFile, $sBlackIpsFileName) {
+			$this->_sLogFile          = $sLogFile;
 			$this->_sBlackIpsFileName = $sBlackIpsFileName;
 			if (file_exists($sBlackIpsFileName)) {
-				$_aBlackIps = json_decode(file_get_contents($sBlackIpsFileName), 1);
+				$this->_aBlackIps = json_decode(file_get_contents($sBlackIpsFileName), 1);
 			}
 		}
 
-		public function parse($sLogFile, $aParseSchema, $aFilterSchema, $aWhiteIps) {
+		public function parse($aParseSchema, $aFilterSchema, $aWhiteIps) {
 			$this->_aParseSchema  = $aParseSchema;
 			$this->_aFilterSchema = $aFilterSchema;
 			$this->_aWhiteIps     = array_flip($aWhiteIps);
 
-			if (file_exists($sLogFile)) {
-				$this->_oLogFile = fopen($sLogFile, 'r');
+			if (file_exists($this->_sLogFile)) {
+				$this->_oLogFile = fopen($this->_sLogFile, 'r');
 				if ($this->_oLogFile) {
-					$nPos = $this->_getPosition();
-					fseek($this->_oLogFile, $nPos);
+					$this->_goToReadPosition();
 					while ($this->_readLine()) {};
 					$this->_savePosition();
 					fclose($this->_oLogFile);
 				} else {
-					$this->_error('Could not open ' . $sLogFile);
+					$this->_error('Could not open ' . $this->_sLogFile);
 				}
 			} else {
-				$this->_error('File ' . $sLogFile . ' does not exist');
+				$this->_error('File ' . $this->_sLogFile . ' does not exist');
 			}
 			print_r($this->_aBlackIps);
 			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps));	

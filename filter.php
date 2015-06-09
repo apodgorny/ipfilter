@@ -2,12 +2,18 @@
 
 	require_once 'class.Parser.php';
 
-	file_put_contents('counter.txt', 0);
+	// file_put_contents('counter.txt', 0);
 
 	if (isset($argv[1])) {
-		$sBlackIpsFileName = $argv[1];
+		$sLogFile = $argv[1];
 	} else {
-		die('Pass filename for black ips as a first parameter' . PHP_EOL);
+		die('Pass path to log file as a first parameter' . PHP_EOL);
+	}	
+
+	if (isset($argv[2])) {
+		$sBlackIpsFileName = $argv[2];
+	} else {
+		die('Pass filename for black ips as a second parameter' . PHP_EOL);
 	}
 
 	$aWhiteIps = [
@@ -18,8 +24,8 @@
 
 	$aParseSchema = [
 		'ip'            => Parser::PARSE_BLOCK_IP,
-		'unknown1'      => Parser::PARSE_BLOCK_NUMERIC,
-		'unknown2'      => Parser::PARSE_BLOCK_NUMERIC,
+		'unknown1'      => Parser::PARSE_BLOCK_NONSPACE,
+		'unknown2'      => Parser::PARSE_BLOCK_NONSPACE,
 		'date'          => [Parser::PARSE_BLOCK_BRACKET_DATA, function($s) {
 			return [
 				'timestamp' => @strtotime($s)
@@ -35,7 +41,7 @@
 		}],
 		'response_code' => Parser::PARSE_BLOCK_NUMERIC,
 		'response_size' => Parser::PARSE_BLOCK_NUMERIC,
-		'unknown3'      => Parser::PARSE_BLOCK_STRING,
+		'unknown3'      => Parser::PARSE_BLOCK_NONSPACE,
 		'browser'       => Parser::PARSE_BLOCK_STRING
 	];
 
@@ -86,7 +92,7 @@
 		'block_threshold'  => 3
 	];
 
-	$oParser = new Parser($sBlackIpsFileName);
-	$oParser->parse('logs/hint.access.log', $aParseSchema, $aFilterSchema, $aWhiteIps);
+	$oParser = new Parser($sLogFile, $sBlackIpsFileName);
+	$oParser->parse($aParseSchema, $aFilterSchema, $aWhiteIps);
 
 ?>
