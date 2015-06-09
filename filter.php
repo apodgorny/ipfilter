@@ -86,7 +86,11 @@
 			'^\/HNAP1',
 			'^\/wp-login',
 			'^http',
-			'^\/manager'
+			'^\/manager',
+			'^\/jenkins',
+			'^\/hudson',
+			'^\/msd',
+			'^\/jmx-console'
 		],
 
 		'block_threshold'  => 3

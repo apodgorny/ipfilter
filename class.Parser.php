@@ -20,8 +20,11 @@
 		private $_aBlackIps = [];
 		private $_aWhiteIps = [];
 
-		private function _error($s) {
-			die('Error: ' . $s . PHP_EOL);
+		private function _error($s, $bDie=true) {
+			print 'Error: ' . $s . PHP_EOL;
+			if ($bDie) {
+				exit(1);
+			}
 		}
 
 		private function _getCounterFileName() {
@@ -34,6 +37,8 @@
 		private function _getPosition() {
 			if (file_exists($this->_getCounterFileName())) {
 				return intval(file_get_contents($this->_getCounterFileName()));
+			} else {
+				return 0;
 			}
 		}
 
@@ -43,6 +48,7 @@
 				$nPos = ftell($this->_oLogFile);
 			}
 			file_put_contents($this->_getCounterFileName(), $nPos);
+			print 'Saving position at ' . $nPos . PHP_EOL;
 		}
 
 		private function _ipMakeExist($aLine) {
@@ -58,6 +64,7 @@
 				$this->_aIps[$aLine['ip']]['danger'] ++;
 
 				if ($this->_aIps[$aLine['ip']]['danger'] >= $this->_aFilterSchema['block_threshold']) {
+					print 'Blacklist: ' . $aLine['ip'] . PHP_EOL;
 					$this->_aBlackIps[$aLine['ip']] = 1;
 				}
 			}
@@ -99,15 +106,26 @@
 			return false;
 		}
 
+		private function _goToNextNewLine() {
+			if (ftell($this->_oLogFile) > 0) {
+				fseek($this->_oLogFile, -2);
+			}
+			do {
+				$sChar = fread($this->_oLogFile, 1);
+			} while ($sChar !== "\n" && ftell($this->_oLogFile) < filesize($this->_sLogFile));
+
+			if (ftell($this->_oLogFile) >= filesize($this->_sLogFile)) {
+				$this->_savePosition();
+			}
+		}
+
 		private function _goToReadPosition() {
 			$nPos = $this->_getPosition();
 			if ($nPos > 0) {
 				$nPos --;
 			}
 			fseek($this->_oLogFile, $nPos);
-			do {
-				$sChar = fread($this->_oLogFile, 1);
-			} while ($sChar !== "\n" || feof($this->_oLogFile));
+			$this->_goToNextNewLine();
 		}
 
 		private function _doAdditionalParse($f, &$aLine, $sLineKey) {
@@ -141,7 +159,8 @@
 					$this->_doAdditionalParse($f, $aLine, $sKey);
 					$nPos += $this->_parseIgnore($s, $nPos);
 				} else {
-					$this->_error('Parse failed at "' . $s . '" while parsing "' . $sKey . '" at byte ' . ftell($this->_oLogFile));
+					$this->_error('Parse failed at "' . $s . '" while parsing "' . $sKey . '" at byte ' . ftell($this->_oLogFile), false);
+					$this->_goToNextNewLine();
 				}
 			}
 			return $aLine;
@@ -154,7 +173,8 @@
 			if (preg_match('/' . self::PARSE_BLOCK_IGNORE . '/', $s, $aMatches, 0, $nPos)) {
 				$nLength = strlen($aMatches[0]);
 			} else {
-				$this->_error('Parse PARSE_BLOCK_IGNORE failed at "' . $s . '"');
+				$this->_error('Parse PARSE_BLOCK_IGNORE failed at "' . $s . '"', false);
+				$this->_goToNextNewLine();
 			}
 			return $nLength;
 		}
@@ -187,7 +207,7 @@
 			} else {
 				$this->_error('File ' . $this->_sLogFile . ' does not exist');
 			}
-			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps));	
+			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps, JSON_PRETTY_PRINT));	
 		}
 	}
 
