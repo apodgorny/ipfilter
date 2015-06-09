@@ -30,8 +30,7 @@
 		private function _getCounterFileName() {
 			if ($this->_sCounterFile === '') {
 				$this->_sCounterFile = dirname(__FILE__) . '/' . md5($this->_sLogFile) . '.counter';
-				print $this->_sCounterFile . PHP_EOL;
-				exit();
+				//print $this->_sCounterFile . PHP_EOL;
 			}
 			return $this->_sCounterFile;
 		}		 
@@ -50,7 +49,7 @@
 				$nPos = ftell($this->_oLogFile);
 			}
 			file_put_contents($this->_getCounterFileName(), $nPos);
-			print 'Saving position at ' . $nPos . PHP_EOL;
+			//print 'Saving position at ' . $nPos . PHP_EOL;
 		}
 
 		private function _ipMakeExist($aLine) {
