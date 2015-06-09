@@ -29,7 +29,9 @@
 
 		private function _getCounterFileName() {
 			if ($this->_sCounterFile === '') {
-				$this->_sCounterFile = md5($this->_sLogFile) . '.counter';
+				$this->_sCounterFile = dirname(__FILE__) . '/' . md5($this->_sLogFile) . '.counter';
+				print $this->_sCounterFile . PHP_EOL;
+				exit();
 			}
 			return $this->_sCounterFile;
 		}		 
