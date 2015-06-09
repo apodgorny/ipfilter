@@ -9,6 +9,8 @@
 		const PARSE_BLOCK_NUMERIC      = '([0-9\-]+)';
 		const PARSE_BLOCK_IGNORE       = '([ ]*)';
 
+		private $_sBlackIpsFileName = '';
+
 		private $_oLogFile      = null;
 		private $_aParseSchema  = [];
 		private $_aFilterSchema = [];
@@ -140,6 +142,13 @@
 
 		/************************ PUBLIC ************************/
 
+		public function __construct($sBlackIpsFileName) {
+			$this->_sBlackIpsFileName = $sBlackIpsFileName;
+			if (file_exists($sBlackIpsFileName)) {
+				$_aBlackIps = json_decode(file_get_contents($sBlackIpsFileName), 1);
+			}
+		}
+
 		public function parse($sLogFile, $aParseSchema, $aFilterSchema, $aWhiteIps) {
 			$this->_aParseSchema  = $aParseSchema;
 			$this->_aFilterSchema = $aFilterSchema;
@@ -160,8 +169,7 @@
 				$this->_error('File ' . $sLogFile . ' does not exist');
 			}
 			print_r($this->_aBlackIps);
-			print_r(array_keys($this->_aBlackIps));
-			// print_r($this->_aIps);
+			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps));	
 		}
 	}
 

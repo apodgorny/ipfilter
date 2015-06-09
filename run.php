@@ -4,6 +4,12 @@
 
 	file_put_contents('counter.txt', 0);
 
+	if (isset($argv[1])) {
+		$sBlackIpsFileName = $argv[1];
+	} else {
+		die('Pass filename for black ips as a first parameter' . PHP_EOL);
+	}
+
 	$aWhiteIps = [
 		'127.0.0.1',
 		'12.185.158.130',
@@ -80,7 +86,7 @@
 		'block_threshold'  => 3
 	];
 
-	$oParser = new Parser();
+	$oParser = new Parser($sBlackIpsFileName);
 	$oParser->parse('logs/hint.access.log', $aParseSchema, $aFilterSchema, $aWhiteIps);
 
 ?>
