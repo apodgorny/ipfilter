@@ -27,6 +27,17 @@
 			}
 		}
 
+		private function _saveBlackIps() {
+			file_put_contents($this->_sBlackIpsFileName, implode("\n", array_keys($this->_aBlackIps)));
+		}
+
+		private function _openBlackIps() {
+			if (file_exists($this->_sBlackIpsFileName)) {
+				$sFileContents = trim(file_get_contents($this->_sBlackIpsFileName));
+				$this->_aBlackIps = array_flip(explode("\n", $sFileContents));
+			}
+		}
+
 		private function _getCounterFileName() {
 			if ($this->_sCounterFile === '') {
 				$this->_sCounterFile = dirname(__FILE__) . '/' . md5($this->_sLogFile) . '.counter';
@@ -185,9 +196,8 @@
 		public function __construct($sLogFile, $sBlackIpsFileName) {
 			$this->_sLogFile          = $sLogFile;
 			$this->_sBlackIpsFileName = $sBlackIpsFileName;
-			if (file_exists($sBlackIpsFileName)) {
-				$this->_aBlackIps = json_decode(file_get_contents($sBlackIpsFileName), 1);
-			}
+
+			$this->_openBlackIps();
 		}
 
 		public function parse($aParseSchema, $aFilterSchema, $aWhiteIps) {
@@ -208,7 +218,7 @@
 			} else {
 				$this->_error('File ' . $this->_sLogFile . ' does not exist');
 			}
-			file_put_contents($this->_sBlackIpsFileName, json_encode($this->_aBlackIps, JSON_PRETTY_PRINT));	
+			$this->_saveBlackIps();	
 		}
 	}
 
